@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Data Satuan Pendidikan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            box-sizing: border-box;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-full">
+    <main class="container mx-auto px-4 py-8">
+        <div class="max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-8">
+            <header class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">Form Data Satuan Pendidikan</h1>
+                <p class="text-gray-600">Pilih data sesuai dengan urutan yang tersedia</p>
+            </header>
+
+            <form id="schoolForm" class="space-y-6">
+                <!-- Kabupaten/Kota -->
+                <div>
+                    <label for="kabupaten" class="block text-sm font-medium text-gray-700 mb-2">
+                        Kabupaten/Kota <span class="text-red-500">*</span>
+                    </label>
+                    <select id="kabupaten" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                        <option value="">Memuat data...</option>
+                    </select>
+                </div>
+
+                <!-- Jenjang -->
+                <div>
+                    <label for="jenjang" class="block text-sm font-medium text-gray-700 mb-2">
+                        Jenjang <span class="text-red-500">*</span>
+                    </label>
+                    <select id="jenjang" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" disabled>
+                        <option value="">Pilih Kabupaten/Kota terlebih dahulu</option>
+                    </select>
+                </div>
+
+                <!-- NPSN -->
+                <div>
+                    <label for="npsn" class="block text-sm font-medium text-gray-700 mb-2">
+                        NPSN <span class="text-red-500">*</span>
+                    </label>
+                    <select id="npsn" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" disabled>
+                        <option value="">Pilih Jenjang terlebih dahulu</option>
+                    </select>
+                </div>
+
+                <!-- Nama Satuan Pendidikan (Auto-filled) -->
+                <div>
+                    <label for="namaSatuan" class="block text-sm font-medium text-gray-700 mb-2">
+                        Nama Satuan Pendidikan
+                    </label>
+                    <input type="text" id="namaSatuan" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700" readonly placeholder="Akan terisi otomatis setelah memilih NPSN">
+                </div>
+
+                <!-- Submit Button -->
+                <div class="pt-4">
+                    <button type="submit" id="submitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                        Selanjutnya
+                    </button>
+                </div>
+            </form>
+
+            <!-- Loading indicator -->
+            <div id="loadingIndicator" class="text-center py-4">
+                <div class="loading mx-auto mb-2"></div>
+                <p class="text-gray-600">Memuat data dari spreadsheet...</p>
+            </div>
+
+            <!-- Success message -->
+            <div id="successMessage" class="hidden mt-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+                <h3 class="font-semibold">Data berhasil disimpan!</h3>
+                <p class="text-sm mt-1">Form telah disubmit dengan data yang dipilih.</p>
+            </div>
+
+            <!-- Apps Script Instructions -->
+            <div class="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h3 class="font-semibold text-blue-800 mb-2">📝 Petunjuk Setup Apps Script:</h3>
+                <ol class="text-sm text-blue-700 space-y-1 list-decimal list-inside">
+                    <li>Buka <a href="https://script.google.com" target="_blank" class="underline">Google Apps Script</a></li>
+                    <li>Buat project baru dan paste kode Apps Script yang disediakan</li>
+                    <li>Deploy sebagai Web App dengan akses "Anyone"</li>
+                    <li>Copy URL deployment dan ganti "YOUR_APPS_SCRIPT_WEB_APP_URL_HERE" di kode</li>
+                </ol>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let schoolData = [];
+        
+        // Sample data as fallback - sesuai urutan kolom A,B,C,D
+        const sampleData = [
+            { kabupaten: 'Kota Ambon', jenjang: 'SD', npsn: '60100001', namaSatuan: 'SD Negeri 1 Ambon' },
+            { kabupaten: 'Kota Ambon', jenjang: 'SD', npsn: '60100002', namaSatuan: 'SD Negeri 2 Ambon' },
+            { kabupaten: 'Kota Ambon', jenjang: 'SMP', npsn: '20100001', namaSatuan: 'SMP Negeri 1 Ambon' },
+            { kabupaten: 'Kota Ambon', jenjang: 'SMA', npsn: '10100001', namaSatuan: 'SMA Negeri 1 Ambon' },
+            { kabupaten: 'Maluku Tengah', jenjang: 'SD', npsn: '60200001', namaSatuan: 'SD Negeri 1 Masohi' },
+            { kabupaten: 'Maluku Tengah', jenjang: 'SMP', npsn: '20200001', namaSatuan: 'SMP Negeri 1 Masohi' },
+            { kabupaten: 'Kota Tual', jenjang: 'SD', npsn: '60300001', namaSatuan: 'SD Negeri 1 Tual' },
+            { kabupaten: 'Kota Tual', jenjang: 'SMP', npsn: '20300001', namaSatuan: 'SMP Negeri 1 Tual' }
+        ];
+
+        // Load data from Google Sheets
+        async function loadData() {
+            try {
+                // Try to load from Google Sheets first
+                const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSVwcI9DQAimyJuPxMuwuH9Q04Ef_zvhx5ZqeuE1a63eG_sE8_Qp1PVkN844cA2Q7n5utIVRPyxsk-6/pub?output=csv';
+                
+                const response = await fetch(csvUrl);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const csvText = await response.text();
+                
+                // Better CSV parsing
+                const rows = [];
+                const lines = csvText.split('\n');
+                
+                for (let line of lines) {
+                    if (line.trim()) {
+                        const cols = [];
+                        let current = '';
+                        let inQuotes = false;
+                        
+                        for (let i = 0; i < line.length; i++) {
+                            const char = line[i];
+                            if (char === '"') {
+                                inQuotes = !inQuotes;
+                            } else if (char === ',' && !inQuotes) {
+                                cols.push(current.replace(/"/g, '').trim());
+                                current = '';
+                            } else {
+                                current += char;
+                            }
+                        }
+                        cols.push(current.replace(/"/g, '').trim());
+                        rows.push(cols);
+                    }
+                }
+                
+                // Process data - skip header row
+                // Kolom A = Kabupaten, Kolom B = Jenjang, Kolom C = NPSN, Kolom D = Nama Satuan
+                schoolData = rows.slice(1).filter(row => row.length >= 4 && row[0]).map(row => ({
+                    kabupaten: row[0] || '', // Kolom A
+                    jenjang: row[1] || '',    // Kolom B
+                    npsn: row[2] || '',       // Kolom C
+                    namaSatuan: row[3] || ''  // Kolom D
+                })).filter(item => item.kabupaten && item.jenjang && item.npsn && item.namaSatuan);
+                
+                console.log('Data loaded from spreadsheet:', schoolData.length, 'records');
+                
+                if (schoolData.length === 0) {
+                    throw new Error('No valid data found in spreadsheet');
+                }
+                
+                populateKabupaten();
+                document.getElementById('loadingIndicator').style.display = 'none';
+                
+            } catch (error) {
+                console.error('Error loading from spreadsheet:', error);
+                
+                // Use sample data as fallback
+                schoolData = sampleData;
+                console.log('Using sample data:', schoolData.length, 'records');
+                
+                populateKabupaten();
+                document.getElementById('loadingIndicator').innerHTML = 
+                    `<div class="text-center">
+                        <p class="text-yellow-600 mb-2">Menggunakan data contoh</p>
+                        <p class="text-sm text-gray-600 mb-4">Tidak dapat memuat dari spreadsheet, menggunakan data sample</p>
+                        <button onclick="loadData()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                            Coba Muat Ulang
+                        </button>
+                    </div>`;
+            }
+        }
+        
+        // Populate Kabupaten dropdown
+        function populateKabupaten() {
+            const kabupatenSelect = document.getElementById('kabupaten');
+            const uniqueKabupaten = [...new Set(schoolData.map(item => item.kabupaten))].sort();
+            
+            kabupatenSelect.innerHTML = '<option value="">Pilih Kabupaten/Kota</option>';
+            uniqueKabupaten.forEach(kabupaten => {
+                if (kabupaten) {
+                    const option = document.createElement('option');
+                    option.value = kabupaten;
+                    option.textContent = kabupaten;
+                    kabupatenSelect.appendChild(option);
+                }
+            });
+        }
+        
+        // Handle Kabupaten selection
+        document.getElementById('kabupaten').addEventListener('change', function() {
+            const selectedKabupaten = this.value;
+            const jenjangSelect = document.getElementById('jenjang');
+            const npsnSelect = document.getElementById('npsn');
+            const namaSatuanInput = document.getElementById('namaSatuan');
+            
+            // Reset dependent fields
+            npsnSelect.innerHTML = '<option value="">Pilih Jenjang terlebih dahulu</option>';
+            npsnSelect.disabled = true;
+            namaSatuanInput.value = '';
+            updateSubmitButton();
+            
+            if (selectedKabupaten) {
+                // Get unique jenjang for selected kabupaten
+                const filteredData = schoolData.filter(item => item.kabupaten === selectedKabupaten);
+                const uniqueJenjang = [...new Set(filteredData.map(item => item.jenjang))].sort();
+                
+                jenjangSelect.innerHTML = '<option value="">Pilih Jenjang</option>';
+                uniqueJenjang.forEach(jenjang => {
+                    if (jenjang) {
+                        const option = document.createElement('option');
+                        option.value = jenjang;
+                        option.textContent = jenjang;
+                        jenjangSelect.appendChild(option);
+                    }
+                });
+                jenjangSelect.disabled = false;
+            } else {
+                jenjangSelect.innerHTML = '<option value="">Pilih Kabupaten/Kota terlebih dahulu</option>';
+                jenjangSelect.disabled = true;
+            }
+        });
+        
+        // Handle Jenjang selection
+        document.getElementById('jenjang').addEventListener('change', function() {
+            const selectedKabupaten = document.getElementById('kabupaten').value;
+            const selectedJenjang = this.value;
+            const npsnSelect = document.getElementById('npsn');
+            const namaSatuanInput = document.getElementById('namaSatuan');
+            
+            // Reset dependent fields
+            namaSatuanInput.value = '';
+            updateSubmitButton();
+            
+            if (selectedJenjang && selectedKabupaten) {
+                // Get NPSN for selected kabupaten and jenjang
+                const filteredData = schoolData.filter(item => 
+                    item.kabupaten === selectedKabupaten && item.jenjang === selectedJenjang
+                );
+                
+                npsnSelect.innerHTML = '<option value="">Pilih NPSN</option>';
+                filteredData.forEach(item => {
+                    if (item.npsn) {
+                        const option = document.createElement('option');
+                        option.value = item.npsn;
+                        option.textContent = `${item.npsn} - ${item.namaSatuan}`;
+                        npsnSelect.appendChild(option);
+                    }
+                });
+                npsnSelect.disabled = false;
+            } else {
+                npsnSelect.innerHTML = '<option value="">Pilih Jenjang terlebih dahulu</option>';
+                npsnSelect.disabled = true;
+            }
+        });
+        
+        // Handle NPSN selection - auto-fill nama satuan
+        document.getElementById('npsn').addEventListener('change', function() {
+            const selectedNpsn = this.value;
+            const namaSatuanInput = document.getElementById('namaSatuan');
+            
+            if (selectedNpsn) {
+                const selectedSchool = schoolData.find(item => item.npsn === selectedNpsn);
+                if (selectedSchool) {
+                    namaSatuanInput.value = selectedSchool.namaSatuan;
+                }
+            } else {
+                namaSatuanInput.value = '';
+            }
+            updateSubmitButton();
+        });
+        
+        // Update submit button state
+        function updateSubmitButton() {
+            const kabupaten = document.getElementById('kabupaten').value;
+            const jenjang = document.getElementById('jenjang').value;
+            const npsn = document.getElementById('npsn').value;
+            const submitBtn = document.getElementById('submitBtn');
+            
+            if (kabupaten && jenjang && npsn) {
+                submitBtn.disabled = false;
+            } else {
+                submitBtn.disabled = true;
+            }
+        }
+        
+        // Handle form submission
+        document.getElementById('schoolForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                timestamp: new Date().toISOString(),
+                kabupaten: document.getElementById('kabupaten').value,
+                jenjang: document.getElementById('jenjang').value,
+                npsn: document.getElementById('npsn').value,
+                namaSatuan: document.getElementById('namaSatuan').value
+            };
+            
+            // Show loading state
+            const submitBtn = document.getElementById('submitBtn');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Menyimpan...';
+            submitBtn.disabled = true;
+            
+            try {
+                // Replace this URL with your deployed Apps Script web app URL
+                const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbz6PpF1LE6FG8ZeSMtpmD1qL5vOBga9lKFP7G0OpcJDCp4lYglkbNKEpQ6zI_s7I-E16g/exec';
+                
+                const response = await fetch(appsScriptUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Show success message
+                    document.getElementById('successMessage').classList.remove('hidden');
+                    document.getElementById('successMessage').className = 'mt-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg';
+                    document.getElementById('successMessage').innerHTML = `
+                        <h3 class="font-semibold">✅ Data berhasil disimpan!</h3>
+                        <p class="text-sm mt-1">Data telah tersimpan ke Google Sheets pada baris ${result.row || 'baru'}.</p>
+                    `;
+                } else {
+                    throw new Error(result.message || 'Gagal menyimpan data');
+                }
+                
+            } catch (error) {
+                console.error('Error saving data:', error);
+                
+                // Show error message
+                document.getElementById('successMessage').classList.remove('hidden');
+                document.getElementById('successMessage').className = 'mt-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg';
+                document.getElementById('successMessage').innerHTML = `
+                    <h3 class="font-semibold">❌ Gagal menyimpan data!</h3>
+                    <p class="text-sm mt-1">Terjadi kesalahan: ${error.message}</p>
+                    <p class="text-xs mt-2 text-red-600">Pastikan Apps Script sudah di-deploy dengan benar.</p>
+                `;
+            } finally {
+                // Reset button
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+            
+            // Scroll to message
+            document.getElementById('successMessage').scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+            });
+            
+            console.log('Form data submitted:', formData);
+        });
+        
+
+        
+        // Load data when page loads
+        loadData();
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98ff24ddf30ce875',t:'MTc2MDY5NzI3Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
