@@ -91,16 +91,45 @@
                 <p class="text-sm mt-1">Form telah disubmit dengan data yang dipilih.</p>
             </div>
 
-            <!-- Apps Script Instructions -->
+            <!-- Setup Instructions -->
             <div class="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <h3 class="font-semibold text-blue-800 mb-2">📝 Petunjuk Setup Apps Script:</h3>
-                <ol class="text-sm text-blue-700 space-y-1 list-decimal list-inside">
-                    <li>Buka <a href="https://script.google.com" target="_blank" class="underline">Google Apps Script</a></li>
-                    <li>Buat project baru dan paste kode Apps Script yang disediakan</li>
-                    <li>Deploy sebagai Web App dengan akses "Anyone"</li>
-                    <li>Copy URL deployment dan ganti "YOUR_APPS_SCRIPT_WEB_APP_URL_HERE" di kode</li>
-                </ol>
+                <h3 class="font-semibold text-blue-800 mb-2">📝 Setup untuk Menyimpan ke Spreadsheet:</h3>
+                <div class="text-sm text-blue-700 space-y-2">
+                    <p><strong>1. Buka Google Apps Script:</strong> <a href="https://script.google.com" target="_blank" class="underline">script.google.com</a></p>
+                    <p><strong>2. Buat project baru</strong> dan paste kode berikut:</p>
+                    <div class="bg-gray-800 text-green-400 p-3 rounded text-xs overflow-x-auto mt-2">
+<pre>function doPost(e) {
+  try {
+    const spreadsheetId = '1fyF9Rjr06v_xFGfAcXiOHuCo_08q40BRHKuyHNVp6lQ';
+    const sheet = SpreadsheetApp.openById(spreadsheetId).getActiveSheet();
+    
+    const data = JSON.parse(e.postData.contents);
+    
+    // Add data to new row
+    sheet.appendRow([
+      new Date(data.timestamp),
+      data.kabupaten,
+      data.jenjang, 
+      data.npsn,
+      data.namaSatuan
+    ]);
+    
+    return ContentService
+      .createTextOutput(JSON.stringify({success: true, row: sheet.getLastRow()}))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch (error) {
+    return ContentService
+      .createTextOutput(JSON.stringify({success: false, message: error.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}</pre>
+                    </div>
+                    <p><strong>3. Deploy sebagai Web App</strong> dengan akses "Anyone"</p>
+                    <p><strong>4. Copy URL deployment</strong> dan ganti di kode JavaScript</p>
+                </div>
             </div>
+
         </div>
     </main>
 
@@ -382,5 +411,5 @@
         // Load data when page loads
         loadData();
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98ff24ddf30ce875',t:'MTc2MDY5NzI3Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98ff61bde35aa396',t:'MTc2MDY5OTc2NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
