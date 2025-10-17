@@ -103,30 +103,71 @@
     const spreadsheetId = '1fyF9Rjr06v_xFGfAcXiOHuCo_08q40BRHKuyHNVp6lQ';
     const sheet = SpreadsheetApp.openById(spreadsheetId).getActiveSheet();
     
-    const data = JSON.parse(e.postData.contents);
+    // Parse the incoming data
+    let data;
+    if (e.postData && e.postData.contents) {
+      data = JSON.parse(e.postData.contents);
+    } else {
+      throw new Error('No data received');
+    }
+    
+    // Add header row if sheet is empty
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(['Timestamp', 'Kabupaten', 'Jenjang', 'NPSN', 'Nama Satuan Pendidikan']);
+    }
     
     // Add data to new row
-    sheet.appendRow([
+    const newRow = [
       new Date(data.timestamp),
-      data.kabupaten,
-      data.jenjang, 
-      data.npsn,
-      data.namaSatuan
-    ]);
+      data.kabupaten || '',
+      data.jenjang || '', 
+      data.npsn || '',
+      data.namaSatuan || ''
+    ];
+    
+    sheet.appendRow(newRow);
+    
+    // Return success response with CORS headers
+    const response = {
+      success: true, 
+      row: sheet.getLastRow(),
+      message: 'Data berhasil disimpan'
+    };
     
     return ContentService
-      .createTextOutput(JSON.stringify({success: true, row: sheet.getLastRow()}))
+      .createTextOutput(JSON.stringify(response))
       .setMimeType(ContentService.MimeType.JSON);
       
   } catch (error) {
+    // Return error response
+    const errorResponse = {
+      success: false, 
+      message: error.toString()
+    };
+    
     return ContentService
-      .createTextOutput(JSON.stringify({success: false, message: error.toString()}))
+      .createTextOutput(JSON.stringify(errorResponse))
       .setMimeType(ContentService.MimeType.JSON);
   }
+}
+
+function doGet(e) {
+  // Handle GET requests for testing
+  return ContentService
+    .createTextOutput('Apps Script is working! Use POST to submit data.')
+    .setMimeType(ContentService.MimeType.TEXT);
 }</pre>
                     </div>
-                    <p><strong>3. Deploy sebagai Web App</strong> dengan akses "Anyone"</p>
-                    <p><strong>4. Copy URL deployment</strong> dan ganti di kode JavaScript</p>
+                    <p><strong>3. Deploy sebagai Web App:</strong></p>
+                    <ul class="list-disc list-inside ml-4 space-y-1">
+                        <li>Klik "Deploy" → "New deployment"</li>
+                        <li>Type: "Web app"</li>
+                        <li>Execute as: "Me"</li>
+                        <li>Who has access: "Anyone"</li>
+                        <li>Klik "Deploy"</li>
+                    </ul>
+                    <p><strong>4. Copy URL Web App</strong> dan ganti "YOUR_APPS_SCRIPT_WEB_APP_URL_HERE" di kode JavaScript</p>
+                    <p class="text-xs text-blue-600 mt-2">💡 Tip: Setelah deploy, test dulu dengan mengakses URL untuk memastikan muncul pesan "Apps Script is working!"</p>
                 </div>
             </div>
 
@@ -411,5 +452,5 @@
         // Load data when page loads
         loadData();
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98ff61bde35aa396',t:'MTc2MDY5OTc2NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98ff6e34c7b4b58a',t:'MTc2MDcwMDI3Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
